@@ -2,8 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import '../services/data_service.dart';
 
-class MyApp extends HookWidget {
-  const MyApp({super.key});
+class Selection {
+  static const List<int> options = [3, 5, 7];
+}
+
+class MyApp extends StatelessWidget {
+  final DataService dataService = DataService();
+  final List<int> loadOptions = Selection.options;
+  final TextEditingController searchController = TextEditingController();
+
+  void updateSearchQuery(String query) {
+    dataService.tableStateNotifier.value = {
+      ...dataService.tableStateNotifier.value,
+      'status': TableStatus.loading,
+    };
+    Future.delayed(Duration(milliseconds: 500), () {
+      dataService.tableStateNotifier.value = {
+        ...dataService.tableStateNotifier.value,
+        'status': TableStatus.ready,
+      };
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +31,23 @@ class MyApp extends HookWidget {
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           appBar: AppBar(title: const Text("Dicas"), actions: [
+            Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                child: SizedBox(
+                    width: 200,
+                    child: TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: "Pesquisar",
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none),
+                      ),
+                      onChanged: (query) => updateSearchQuery(query),
+                    ))),
             PopupMenuButton(
                 itemBuilder: (_) => [3, 7, 15]
                     .map((number) => PopupMenuItem(
@@ -46,11 +82,11 @@ class MyApp extends HookWidget {
                         scrollDirection: Axis.horizontal,
                         children: [
                           SingleChildScrollView(
-                            child: DataTableWidget(
-                                jsonObjects: value['dataObjects'],
-                                propertyNames: value['propertyNames'],
-                                columnNames: value['columnNames']),
-                          )
+                              child: DataTableWidget(
+                                  jsonObjects: value['dataObjects'],
+                                  propertyNames: value['propertyNames'],
+                                  columnNames: value['columnNames'],
+                                  searchQuery: searchController.text)),
                         ]);
 
                   case TableStatus.error:
@@ -100,56 +136,85 @@ class NewNavBar extends HookWidget {
   }
 }
 
-class DataTableWidget extends StatefulWidget {
+class DataTableWidget extends StatelessWidget {
   final List jsonObjects;
   final List<String> columnNames;
   final List<String> propertyNames;
+  final String searchQuery; // Novo campo para a consulta de pesquisa
 
   DataTableWidget({
     this.jsonObjects = const [],
     this.columnNames = const [],
     this.propertyNames = const [],
+    this.searchQuery = '', // Atribuição do parâmetro searchQuery
   });
 
   @override
-  _DataTableWidgetState createState() => _DataTableWidgetState();
-}
-
-class _DataTableWidgetState extends State<DataTableWidget> {
-  int _sortColumnIndex = 0;
-  bool _sortAscending = true;
-
-  @override
   Widget build(BuildContext context) {
+    List filteredObjects = jsonObjects;
+    var sortCriteria = dataService.tableStateNotifier.value['sortCriteria'];
+    var ascending = dataService.tableStateNotifier.value['ascending'];
+
+    if (searchQuery.length >= 3) {
+      filteredObjects = jsonObjects.where((obj) {
+        for (var propName in propertyNames) {
+          String propertyValue = obj[propName].toString().toLowerCase();
+          String query = searchQuery.toLowerCase();
+
+          if (propertyValue.contains(query)) {
+            return true;
+          }
+        }
+
+        return false;
+      }).toList();
+    }
+
     return DataTable(
-      sortColumnIndex: _sortColumnIndex,
-      sortAscending: _sortAscending,
-      columns: widget.columnNames
+      columns: columnNames
           .asMap()
-          .map((index, name) => MapEntry(
-                index,
-                DataColumn(
-                  label: Text(name,
-                      style: const TextStyle(fontStyle: FontStyle.italic)),
-                  onSort: (columnIndex, ascending) {
-                    setState(() {
-                      _sortColumnIndex = columnIndex;
-                      _sortAscending = ascending;
-                    });
-                    dataService.sortCurrentState(
-                        widget.propertyNames[columnIndex], ascending);
-                  },
+          .map(
+            (index, name) => MapEntry(
+              index,
+              DataColumn(
+                onSort: (columnIndex, ascending) =>
+                    dataService.sortCurrentState(propertyNames[columnIndex]),
+                label: Expanded(
+                  child: InkWell(
+                    onTap: () => dataService.sortCurrentState(propertyNames[
+                        index]), // Atualizar ordenação ao clicar na coluna
+                    child: Row(
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                        if (sortCriteria == propertyNames[index])
+                          Icon(
+                            ascending
+                                ? Icons.arrow_upward
+                                : Icons.arrow_downward,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ))
+              ),
+            ),
+          )
           .values
           .toList(),
-      rows: widget.jsonObjects.map((obj) {
-        return DataRow(
-          cells: widget.propertyNames
-              .map((propName) => DataCell(Text(obj[propName])))
-              .toList(),
-        );
-      }).toList(),
+      rows: filteredObjects // Usar os objetos filtrados
+          .map(
+            (obj) => DataRow(
+              cells: propertyNames
+                  .map(
+                    (propName) => DataCell(Text(obj[propName])),
+                  )
+                  .toList(),
+            ),
+          )
+          .toList(),
     );
   }
 }

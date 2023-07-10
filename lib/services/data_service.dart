@@ -69,27 +69,26 @@ class DataService {
     loadByType(params[index]);
   }
 
-  void sortCurrentState(String property, bool ascending) {
+  void sortCurrentState(String property) {
     List objects = tableStateNotifier.value['dataObjects'] ?? [];
 
-    if (objects == []) return;
+    if (objects.isEmpty) return;
 
-    var sortedObjects = List.from(objects);
+    bool ascending = true;
+    var sortCriteria = tableStateNotifier.value['sortCriteria'];
 
-    sortedObjects.sort((a, b) {
-      var aValue = a[property];
-      var bValue = b[property];
+    if (sortCriteria == property) {
+      ascending = !tableStateNotifier.value[
+          'ascending']; // Alternar entre crescente e decrescente se a mesma coluna for clicada novamente
+    }
 
-      if (aValue is String) {
-        return ascending ? aValue.compareTo(bValue) : bValue.compareTo(aValue);
-      } else if (aValue is int) {
-        return ascending ? aValue - bValue : bValue - aValue;
-      } else {
-        return 0;
-      }
+    objects.sort((a, b) {
+      final valueA = a[property];
+      final valueB = b[property];
+      return ascending ? valueA.compareTo(valueB) : valueB.compareTo(valueA);
     });
 
-    sendSortedState(sortedObjects, property);
+    sendSortedState(objects, property, ascending);
   }
 
   Uri buildUri(ItemType type) {
@@ -110,12 +109,12 @@ class DataService {
     return json;
   }
 
-  void sendSortedState(List sortedObjects, String property) {
+  void sendSortedState(List sortedObjects, String property, bool ascending) {
     var state = Map<String, dynamic>.from(tableStateNotifier.value);
 
     state['dataObjects'] = sortedObjects;
     state['sortCriteria'] = property;
-    state['ascending'] = true;
+    state['ascending'] = ascending;
 
     tableStateNotifier.value = state;
   }
