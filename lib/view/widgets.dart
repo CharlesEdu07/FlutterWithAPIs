@@ -2,13 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import '../services/data_service.dart';
 
-class Selection {
-  static const List<int> options = [3, 5, 7];
-}
-
 class MyApp extends StatelessWidget {
   final DataService dataService = DataService();
-  final List<int> loadOptions = Selection.options;
   final TextEditingController searchController = TextEditingController();
 
   void updateSearchQuery(String query) {
@@ -84,8 +79,8 @@ class MyApp extends StatelessWidget {
                           SingleChildScrollView(
                               child: DataTableWidget(
                                   jsonObjects: value['dataObjects'],
-                                  propertyNames: value['propertyNames'],
-                                  columnNames: value['columnNames'],
+                                  propertyNames: value['propertyNames'] ?? [],
+                                  columnNames: value['columnNames'] ?? [],
                                   searchQuery: searchController.text)),
                         ]);
 
@@ -170,51 +165,53 @@ class DataTableWidget extends StatelessWidget {
       }).toList();
     }
 
-    return DataTable(
-      columns: columnNames
-          .asMap()
-          .map(
-            (index, name) => MapEntry(
-              index,
-              DataColumn(
-                onSort: (columnIndex, ascending) =>
-                    dataService.sortCurrentState(propertyNames[columnIndex]),
-                label: Expanded(
-                  child: InkWell(
-                    onTap: () => dataService.sortCurrentState(propertyNames[
-                        index]), // Atualizar ordenação ao clicar na coluna
-                    child: Row(
-                      children: [
-                        Text(
-                          name,
-                          style: TextStyle(fontStyle: FontStyle.italic),
-                        ),
-                        if (sortCriteria == propertyNames[index])
-                          Icon(
-                            ascending
-                                ? Icons.arrow_upward
-                                : Icons.arrow_downward,
+    return columnNames.isEmpty
+        ? const Center(child: Text("Toque em algum botão"))
+        : DataTable(
+            columns: columnNames
+                .asMap()
+                .map(
+                  (index, name) => MapEntry(
+                    index,
+                    DataColumn(
+                      onSort: (columnIndex, ascending) => dataService
+                          .sortCurrentState(propertyNames[columnIndex]),
+                      label: Expanded(
+                        child: InkWell(
+                          onTap: () => dataService.sortCurrentState(propertyNames[
+                              index]), // Atualizar ordenação ao clicar na coluna
+                          child: Row(
+                            children: [
+                              Text(
+                                name,
+                                style: TextStyle(fontStyle: FontStyle.italic),
+                              ),
+                              if (sortCriteria == propertyNames[index])
+                                Icon(
+                                  ascending
+                                      ? Icons.arrow_upward
+                                      : Icons.arrow_downward,
+                                ),
+                            ],
                           ),
-                      ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          )
-          .values
-          .toList(),
-      rows: filteredObjects // Usar os objetos filtrados
-          .map(
-            (obj) => DataRow(
-              cells: propertyNames
-                  .map(
-                    (propName) => DataCell(Text(obj[propName])),
-                  )
-                  .toList(),
-            ),
-          )
-          .toList(),
-    );
+                )
+                .values
+                .toList(),
+            rows: filteredObjects // Usar os objetos filtrados
+                .map(
+                  (obj) => DataRow(
+                    cells: propertyNames
+                        .map(
+                          (propName) => DataCell(Text(obj[propName])),
+                        )
+                        .toList(),
+                  ),
+                )
+                .toList(),
+          );
   }
 }
