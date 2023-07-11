@@ -166,7 +166,13 @@ class DataTableWidget extends StatelessWidget {
     }
 
     return columnNames.isEmpty
-        ? const Center(child: Text("Toque em algum botão"))
+        ? const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              "Selecione uma opção no menu inferior",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20),
+            ))
         : DataTable(
             columns: columnNames
                 .asMap()
