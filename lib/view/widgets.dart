@@ -81,7 +81,8 @@ class MyApp extends StatelessWidget {
                                   jsonObjects: value['dataObjects'],
                                   propertyNames: value['propertyNames'] ?? [],
                                   columnNames: value['columnNames'] ?? [],
-                                  searchQuery: searchController.text)),
+                                  searchQuery: searchController.text,
+                                  dataService: dataService)),
                         ]);
 
                   case TableStatus.error:
@@ -135,13 +136,15 @@ class DataTableWidget extends StatelessWidget {
   final List jsonObjects;
   final List<String> columnNames;
   final List<String> propertyNames;
-  final String searchQuery; // Novo campo para a consulta de pesquisa
+  final String searchQuery;
+  final DataService dataService;
 
   DataTableWidget({
     this.jsonObjects = const [],
     this.columnNames = const [],
     this.propertyNames = const [],
-    this.searchQuery = '', // Atribuição do parâmetro searchQuery
+    this.searchQuery = '',
+    required this.dataService,
   });
 
   @override
@@ -180,12 +183,13 @@ class DataTableWidget extends StatelessWidget {
                   (index, name) => MapEntry(
                     index,
                     DataColumn(
-                      onSort: (columnIndex, ascending) => dataService
-                          .sortCurrentState(propertyNames[columnIndex]),
+                      onSort: (columnIndex, ascending) =>
+                          dataService.sortCurrentState(propertyNames[
+                              columnIndex]), // Use dataService to call sortCurrentState
                       label: Expanded(
                         child: InkWell(
                           onTap: () => dataService.sortCurrentState(propertyNames[
-                              index]), // Atualizar ordenação ao clicar na coluna
+                              index]), // Use dataService to call sortCurrentState
                           child: Row(
                             children: [
                               Text(
