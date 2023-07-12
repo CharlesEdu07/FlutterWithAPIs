@@ -183,13 +183,12 @@ class DataTableWidget extends StatelessWidget {
                   (index, name) => MapEntry(
                     index,
                     DataColumn(
-                      onSort: (columnIndex, ascending) =>
-                          dataService.sortCurrentState(propertyNames[
-                              columnIndex]), // Use dataService to call sortCurrentState
+                      onSort: (columnIndex, ascending) => dataService
+                          .sortCurrentState(propertyNames[columnIndex]),
                       label: Expanded(
                         child: InkWell(
-                          onTap: () => dataService.sortCurrentState(propertyNames[
-                              index]), // Use dataService to call sortCurrentState
+                          onTap: () => dataService
+                              .sortCurrentState(propertyNames[index]),
                           child: Row(
                             children: [
                               Text(
@@ -211,7 +210,7 @@ class DataTableWidget extends StatelessWidget {
                 )
                 .values
                 .toList(),
-            rows: filteredObjects // Usar os objetos filtrados
+            rows: filteredObjects
                 .map(
                   (obj) => DataRow(
                     cells: propertyNames
