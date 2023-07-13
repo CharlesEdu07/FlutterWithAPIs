@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.deepPurple),
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          appBar: AppBar(title: const Text("Dicas"), actions: [
+          appBar: AppBar(actions: [
             Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -43,24 +43,13 @@ class MyApp extends StatelessWidget {
                       ),
                       onChanged: (query) => updateSearchQuery(query),
                     ))),
-            PopupMenuButton(
-                itemBuilder: (_) => [3, 7, 15]
-                    .map((number) => PopupMenuItem(
-                          value: number,
-                          child: Text("Carregar $number itens por vez"),
-                        ))
-                    .toList(),
-                onSelected: (number) {
-                  dataService.numberOfItems = number;
-                },
-                child: ValueListenableBuilder(
-                    valueListenable: dataService.tableStateNotifier,
-                    builder: (_, value, __) {
-                      return Row(children: [
-                        Text("${dataService.numberOfItems} itens por vez"),
-                        const Icon(Icons.arrow_drop_down)
-                      ]);
-                    }))
+            //arrowback
+            IconButton(
+                onPressed: () => dataService.undo(),
+                icon: const Icon(Icons.arrow_back_outlined)),
+            IconButton(
+                onPressed: () => dataService.redo(),
+                icon: const Icon(Icons.arrow_forward_outlined)),
           ]),
           body: ValueListenableBuilder(
               valueListenable: dataService.tableStateNotifier,
@@ -91,17 +80,17 @@ class MyApp extends StatelessWidget {
 
                 return const Text("...");
               }),
-          bottomNavigationBar:
-              NewNavBar(itemSelectedCallback: dataService.carregar),
+          bottomNavigationBar: NewNavBar(
+            itemSelectedCallback: dataService.load,
+          ),
         ));
   }
 }
 
 class NewNavBar extends HookWidget {
-  final _itemSelectedCallback;
+  final itemSelectedCallback;
 
-  NewNavBar({itemSelectedCallback})
-      : _itemSelectedCallback = itemSelectedCallback ?? (int) {}
+  NewNavBar({required this.itemSelectedCallback});
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +100,7 @@ class NewNavBar extends HookWidget {
         onTap: (index) {
           state.value = index;
 
-          _itemSelectedCallback(index);
+          itemSelectedCallback(index);
         },
         currentIndex: state.value,
         items: const [

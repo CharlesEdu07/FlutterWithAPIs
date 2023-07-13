@@ -49,7 +49,7 @@ class DataService {
         : value > maxNItems
             ? maxNItems
             : value;
-    carregar(tableStateNotifier.value['itemType'].index);
+    load(tableStateNotifier.value['itemType'].index);
   }
 
   final ValueNotifier<Map<String, dynamic>> tableStateNotifier = ValueNotifier({
@@ -58,7 +58,12 @@ class DataService {
     'itemType': ItemType.none
   });
 
-  void carregar(index) {
+  final List<Map<String, dynamic>> previousStates = [];
+  final List<Map<String, dynamic>> nextStates = [];
+
+  void load(index) {
+    previousStates.add(Map<String, dynamic>.from(tableStateNotifier.value));
+
     final params = [
       ItemType.coffee,
       ItemType.beer,
@@ -70,6 +75,8 @@ class DataService {
   }
 
   void sortCurrentState(String property) {
+    previousStates.add(Map<String, dynamic>.from(tableStateNotifier.value));
+
     List objects = tableStateNotifier.value['dataObjects'] ?? [];
 
     if (objects.isEmpty) return;
@@ -89,6 +96,22 @@ class DataService {
     });
 
     sendSortedState(objects, property, ascending);
+  }
+
+  void undo() {
+    if (previousStates.isEmpty) return;
+
+    nextStates.add(Map<String, dynamic>.from(tableStateNotifier.value));
+
+    tableStateNotifier.value = previousStates.removeLast();
+  }
+
+  void redo() {
+    if (nextStates.isEmpty) return;
+
+    previousStates.add(Map<String, dynamic>.from(tableStateNotifier.value));
+
+    tableStateNotifier.value = nextStates.removeLast();
   }
 
   Uri buildUri(ItemType type) {
